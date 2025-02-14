@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoTrack Kontrol Paneli</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: modalFade 0.3s ease-out;
+        }
+
+        .camera-feed {
+            width: 100%;
+            height: 240px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .camera-feed::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -100%;
+            width: 200%;
+            height: 2px;
+            background: #00ff00;
+            animation: scanLine 2s linear infinite;
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0%); }
+        }
+
+        @keyframes modalFade {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .control-button {
+            transition: all 0.2s ease;
+        }
+
+        .control-button:active {
+            transform: scale(0.95);
+        }
+
+        .speed-gauge {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #06b6d4 var(--speed), #1e293b 0deg);
+            position: relative;
+        }
+
+        .speed-gauge::before {
+            content: '';
+            position: absolute;
+            inset: 10px;
+            background: #0f172a;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen text-white">
+    <div class="container mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 glass-effect rounded-2xl p-6">
+            <div class="flex items-center gap-4 mb-4 md:mb-0">
+                <div class="bg-cyan-500/20 p-3 rounded-xl">
+                    <i data-lucide="cpu" class="text-cyan-400 w-8 h-8"></i>
+                </div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                    NeoTrack Kontrol Paneli
+                </h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-2 bg-green-500/10 px-4 py-2 rounded-full">
+                    <i data-lucide="sun" class="text-yellow-400"></i>
+                    <span id="solarStatus" class="text-sm font-medium">Solar Panel Aktif</span>
+                </div>
+                <div class="flex items-center gap-2 bg-blue-500/10 px-4 py-2 rounded-full">
+                    <i data-lucide="battery-charging" class="text-green-400"></i>
+                    <span id="batteryLevel" class="text-sm font-medium">85%</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Control Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Voice Control -->
+            <div onclick="openModal('voice')" 
+                 class="glass-effect p-6 rounded-2xl cursor-pointer hover:bg-white/10 transition-all group">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="bg-purple-500/20 p-3 rounded-xl group-hover:bg-purple-500/30 transition-colors">
+                        <i data-lucide="mic" class="text-purple-400 w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Sesli Kontrol</h3>
+                </div>
+                <p class="text-sm text-gray-400">Sesli komutlarla aracı kontrol edin</p>
+            </div>
+
+            <!-- Remote Control -->
+            <div onclick="openModal('remote')"
+                 class="glass-effect p-6 rounded-2xl cursor-pointer hover:bg-white/10 transition-all group">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="bg-cyan-500/20 p-3 rounded-xl group-hover:bg-cyan-500/30 transition-colors">
+                        <i data-lucide="radio" class="text-cyan-400 w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Uzaktan Kumanda</h3>
+                </div>
+                <p class="text-sm text-gray-400">Manuel kontrol ve ayarlar</p>
+            </div>
+
+            <!-- Line Tracking -->
+            <div onclick="openModal('tracking')"
+                 class="glass-effect p-6 rounded-2xl cursor-pointer hover:bg-white/10 transition-all group">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="bg-green-500/20 p-3 rounded-xl group-hover:bg-green-500/30 transition-colors">
+                        <i data-lucide="navigation-2" class="text-green-400 w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Çizgi Takip</h3>
+                </div>
+                <p class="text-sm text-gray-400">Otomatik çizgi takip sistemi</p>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="glass-effect p-6 rounded-2xl">
+            <h2 class="text-xl font-semibold mb-6 flex items-center gap-3">
+                <i data-lucide="activity" class="text-cyan-400"></i>
+                Sistem Durumu
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="bg-green-500/10 p-4 rounded-xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="power" class="text-green-400"></i>
+                        <span class="text-sm font-medium">Sistem Durumu</span>
+                    </div>
+                    <span class="text-lg font-semibold text-green-400">Aktif</span>
+                </div>
+                <div class="bg-blue-500/10 p-4 rounded-xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="gauge" class="text-blue-400"></i>
+                        <span class="text-sm font-medium">Hız</span>
+                    </div>
+                    <span id="speedDisplay" class="text-lg font-semibold text-blue-400">35 km/s</span>
+                </div>
+                <div class="bg-yellow-500/10 p-4 rounded-xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="battery" class="text-yellow-400"></i>
+                        <span class="text-sm font-medium">Batarya</span>
+                    </div>
+                    <span id="batteryStatus" class="text-lg font-semibold text-yellow-400">85%</span>
+                </div>
+                <div class="bg-cyan-500/10 p-4 rounded-xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="settings-2" class="text-cyan-400"></i>
+                        <span class="text-sm font-medium">Çalışma Modu</span>
+                    </div>
+                    <span id="modeDisplay" class="text-lg font-semibold text-cyan-400">Manuel</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Voice Control Modal -->
+        <div id="voiceModal" class="modal">
+            <div class="glass-effect rounded-2xl p-6 w-full max-w-md mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold flex items-center gap-3">
+                        <i data-lucide="mic" class="text-purple-400"></i>
+                        Sesli Kontrol
+                    </h3>
+                    <button onclick="closeModal('voice')" class="text-gray-400 hover:text-white">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="space-y-6">
+                    <button id="startVoice" 
+                            class="w-full bg-gradient-to-r from-purple-500 to-blue-500 p-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-3">
+                        <i data-lucide="mic"></i>
+                        Mikrofonu Aç
+                    </button>
+                    <div id="voiceStatus" class="text-center p-4 bg-white/5 rounded-xl"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remote Control Modal -->
+        <div id="remoteModal" class="modal">
+            <div class="glass-effect rounded-2xl p-6 w-full max-w-md mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold flex items-center gap-3">
+                        <i data-lucide="radio" class="text-cyan-400"></i>
+                        Uzaktan Kumanda
+                    </h3>
+                    <button onclick="closeModal('remote')" class="text-gray-400 hover:text-white">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div></div>
+                    <button onclick="remoteControl('up')" 
+                            class="control-button bg-slate-700 p-4 rounded-xl hover:bg-slate-600">
+                        <i data-lucide="chevron-up"></i>
+                    </button>
+                    <div></div>
+                    <button onclick="remoteControl('left')" 
+                            class="control-button bg-slate-700 p-4 rounded-xl hover:bg-slate-600">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <button onclick="remoteControl('horn')" 
+                            class="control-button bg-red-500/20 p-4 rounded-xl hover:bg-red-500/30">
+                        <i data-lucide="bell" class="text-red-400"></i>
+                    </button>
+                    <button onclick="remoteControl('right')" 
+                            class="control-button bg-slate-700 p-4 rounded-xl hover:bg-slate-600">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                    <div></div>
+                    <button onclick="remoteControl('down')" 
+                            class="control-button bg-slate-700 p-4 rounded-xl hover:bg-slate-600">
+                        <i data-lucide="chevron-down"></i>
+                    </button>
+                    <div></div>
+                </div>
+                <div class="flex justify-between items-center bg-white/5 p-4 rounded-xl">
+                    <label class="flex items-center gap-3">
+                        <input type="checkbox" id="solarToggle" class="form-checkbox h-5 w-5 text-cyan-400 rounded" checked>
+                        <span>Solar Panel</span>
+                    </label>
+                    <div class="text-sm font-medium text-cyan-400" id="remoteSpeed">35 km/s</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Line Tracking Modal -->
+        <div id="trackingModal" class="modal">
+            <div class="glass-effect rounded-2xl p-6 w-full max-w-md mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold flex items-center gap-3">
+                        <i data-lucide="navigation-2" class="text-green-400"></i>
+                        Çizgi Takip
+                    </h3>
+                    <button onclick="closeModal('tracking')" class="text-gray-400 hover:text-white">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="camera-feed mb-4"></div>
+                <div id="lineStatus" class="text-center p-4 bg-white/5 rounded-xl"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Audio elements
+        const buttonSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3');
+        const hornSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-car-horn-718.mp3');
+        const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
+
+        // State variables
+        let speed = 35;
+        let batteryLevel = 85;
+        let isLineTrackingActive = false;
+
+        // Voice recognition setup
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'tr-TR';
+        recognition.continuous = true;
+
+        recognition.onresult = (event) => {
+            const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
+            handleVoiceCommand(command);
+        };
+
+        recognition.onend = () => {
+            if (document.getElementById('voiceModal').classList.contains('active')) {
+                recognition.start();
+            }
+        };
+
+        // Functions
+        function playButtonSound() {
+            buttonSound.currentTime = 0;
+            buttonSound.play();
+        }
+
+        function playHorn() {
+            hornSound.currentTime = 0;
+            hornSound.play();
+        }
+
+        function playNotification() {
+            notificationSound.currentTime = 0;
+            notificationSound.play();
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'tr-TR';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function openModal(type) {
+            playButtonSound();
+            document.querySelectorAll('.modal').forEach(modal => modal.classList.remove('active'));
+            document.getElementById(`${type}Modal`).classList.add('active');
+
+            if (type === 'tracking') {
+                document.getElementById('modeDisplay').textContent = 'Otomatik';
+                isLineTrackingActive = true;
+                checkForLine();
+                playNotification();
+            }
+        }
+
+        function closeModal(type) {
+            playButtonSound();
+            document.getElementById(`${type}Modal`).classList.remove('active');
+
+            if (type === 'tracking') {
+                document.getElementById('modeDisplay').textContent = 'Manuel';
+                isLineTrackingActive = false;
+            }
+
+            if (type === 'voice') {
+                recognition.stop();
+                document.getElementById('voiceStatus').textContent = '';
+            }
+        }
+
+        function handleVoiceCommand(command) {
+            playButtonSound();
+            speak(`${command} komutu başarıyla yürütülüyor`);
+            
+            switch (command) {
+                case 'ileri':
+                    speed = Math.min(speed + 5, 50);
+                    updateSpeed();
+                    break;
+                case 'geri':
+                    speed = Math.max(speed - 5, 0);
+                    updateSpeed();
+                    break;
+                case 'korna':
+                    playHorn();
+                    break;
+                case 'dur':
+                    speed = 0;
+                    updateSpeed();
+                    break;
+            }
+        }
+
+        function remoteControl(direction) {
+            playButtonSound();
+            switch (direction) {
+                case 'up':
+                    speed = Math.min(speed + 5, 50);
+                    updateSpeed();
+                    break;
+                case 'down':
+                    speed = Math.max(speed - 5, 0);
+                    updateSpeed();
+                    break;
+                case 'horn':
+                    playHorn();
+                    break;
+            }
+        }
+
+        function updateSpeed() {
+            document.getElementById('speedDisplay').textContent = `${speed} km/s`;
+            document.getElementById('remoteSpeed').textContent = `${speed} km/s`;
+            document.documentElement.style.setProperty('--speed', `${(speed / 50) * 360}deg`);
+        }
+
+        function checkForLine() {
+            if (isLineTrackingActive) {
+                const lineFound = Math.random() > 0.5;
+                const lineStatus = document.getElementById('lineStatus');
+                
+                if (lineFound) {
+                    lineStatus.innerHTML = `
+                        <div class="flex items-center justify-center gap-2 text-green-400">
+                            <i data-lucide="check-circle"></i>
+                            <span>Çizgi Bulundu</span>
+                        </div>
+                    `;
+                } else {
+                    lineStatus.innerHTML = `
+                        <div class="flex items-center justify-center gap-2 text-red-400">
+                            <i data-lucide="x-circle"></i>
+                            <span>Çizgi Bulunamadı</span>
+                        </div>
+                    `;
+                }
+                
+                lucide.createIcons();
+                speak(lineFound ? 'Çizgi Bulundu' : 'Çizgi Bulunamadı');
+                
+                if (isLineTrackingActive) {
+                    setTimeout(checkForLine, 3000);
+                }
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('startVoice').addEventListener('click', () => {
+            playButtonSound();
+            recognition.start();
+            document.getElementById('voiceStatus').innerHTML = `
+                <div class="flex items-center justify-center gap-2 text-green-400">
+                    <i data-lucide="mic"></i>
+                    <span>Mikrofon Aktif - Komut Bekleniyor</span>
+                </div>
+            `;
+            lucide.createIcons();
+        });
+
+        document.getElementById('solarToggle').addEventListener('change', (e) => {
+            playButtonSound();
+            document.getElementById('solarStatus').textContent = 
+                e.target.checked ? 'Solar Panel Aktif' : 'Solar Panel Pasif';
+        });
+
+        // Battery simulation
+        setInterval(() => {
+            if (document.getElementById('solarToggle').checked) {
+                batteryLevel = Math.min(batteryLevel + 1, 100);
+            } else {
+                batteryLevel = Math.max(batteryLevel - 1, 0);
+            }
+            document.getElementById('batteryLevel').textContent = `${batteryLevel}%`;
+            document.getElementById('batteryStatus').textContent = `${batteryLevel}%`;
+        }, 5000);
+
+        // Initialize speed display
+        updateSpeed();
+    </script>
+</body>
+</html>
