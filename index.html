@@ -567,7 +567,7 @@
                 playWarningSound();
             } else if (currentCondition === 'rainy') {
                 weatherWarning.classList.remove('hidden');
-                weatherWarningText.textContent = 'Yağmurlu Hava - Dikkatli Sürüş!';
+                weatherWarningText.textContent = 'Yağmurlu Hava - Dikkatli Sürün!';
                 document.getElementById('roadStatus').innerHTML = `
                     <i data-lucide="cloud-rain" class="text-blue-400"></i>
                     <span id="roadCondition" class="text-sm font-medium">Islak Zemin</span>
@@ -575,7 +575,7 @@
                 speedLimit = 30;
             } else if (currentCondition === 'icy') {
                 weatherWarning.classList.remove('hidden');
-                weatherWarningText.textContent = 'Buzlanma Tehlikesi!';
+                weatherWarningText.textContent = 'Buzlanma Tehlikesi - Dikkatli Sürün!';
                 document.getElementById('roadStatus').innerHTML = `
                     <i data-lucide="snowflake" class="text-blue-400"></i>
                     <span id="roadCondition" class="text-sm font-medium">Buzlu Zemin</span>
@@ -624,7 +624,7 @@
             document.getElementById('voiceStatus').innerHTML = `
                 <div class="flex items-center justify-center gap-2 text-green-400">
                     <i data-lucide="mic"></i>
-                    <span>Mikrofon Aktif - Komut Bekleniyor</span>
+                    <span>Mikrofon Aktif - Komut Söyleyin</span>
                 </div>
             `;
             lucide.createIcons();
