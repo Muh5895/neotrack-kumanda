@@ -90,6 +90,15 @@
             background: #0f172a;
             border-radius: 50%;
         }
+
+        .drive-mode-button {
+            transition: all 0.3s ease;
+        }
+
+        .drive-mode-button.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen text-white">
@@ -190,6 +199,38 @@
                     </div>
                     <span id="modeDisplay" class="text-lg font-semibold text-cyan-400">Manuel</span>
                 </div>
+                <!-- Motor Sıcaklığı -->
+                <div class="bg-red-500/10 p-4 rounded-xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="thermometer" class="text-red-400"></i>
+                        <span class="text-sm font-medium">Motor Sıcaklığı</span>
+                    </div>
+                    <span id="motorTemp" class="text-lg font-semibold text-red-400">65°C</span>
+                </div>
+                <!-- Elektronik Sıcaklık -->
+                <div class="bg-orange-500/10 p-4 rounded-xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="cpu" class="text-orange-400"></i>
+                        <span class="text-sm font-medium">Elektronik Sıcaklık</span>
+                    </div>
+                    <span id="electronicsTemp" class="text-lg font-semibold text-orange-400">45°C</span>
+                </div>
+                <!-- Enerji Tüketimi -->
+                <div class="bg-purple-500/10 p-4 rounded-xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="zap" class="text-purple-400"></i>
+                        <span class="text-sm font-medium">Enerji Tüketimi</span>
+                    </div>
+                    <span id="energyConsumption" class="text-lg font-semibold text-purple-400">2.5 kWh/km</span>
+                </div>
+                <!-- Sürüş Modu -->
+                <div class="bg-indigo-500/10 p-4 rounded-xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="car" class="text-indigo-400"></i>
+                        <span class="text-sm font-medium">Sürüş Modu</span>
+                    </div>
+                    <span id="driveMode" class="text-lg font-semibold text-indigo-400">Normal</span>
+                </div>
             </div>
         </div>
 
@@ -228,6 +269,25 @@
                         <i data-lucide="x"></i>
                     </button>
                 </div>
+                <!-- Sürüş Modları -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <button onclick="setDriveMode('eco')" 
+                            class="drive-mode-button p-3 rounded-xl border border-white/10 hover:bg-white/10">
+                        <i data-lucide="leaf" class="text-green-400 w-6 h-6 mx-auto mb-2"></i>
+                        <span class="text-sm">Eko</span>
+                    </button>
+                    <button onclick="setDriveMode('normal')" 
+                            class="drive-mode-button p-3 rounded-xl border border-white/10 hover:bg-white/10 active">
+                        <i data-lucide="car" class="text-blue-400 w-6 h-6 mx-auto mb-2"></i>
+                        <span class="text-sm">Normal</span>
+                    </button>
+                    <button onclick="setDriveMode('sport')" 
+                            class="drive-mode-button p-3 rounded-xl border border-white/10 hover:bg-white/10">
+                        <i data-lucide="flame" class="text-red-400 w-6 h-6 mx-auto mb-2"></i>
+                        <span class="text-sm">Spor</span>
+                    </button>
+                </div>
+                <!-- Kontrol Butonları -->
                 <div class="grid grid-cols-3 gap-4 mb-6">
                     <div></div>
                     <button onclick="remoteControl('up')" 
@@ -295,6 +355,18 @@
         let speed = 35;
         let batteryLevel = 85;
         let isLineTrackingActive = false;
+        let currentDriveMode = 'normal';
+        let motorTemp = 65;
+        let electronicsTemp = 45;
+        let energyConsumption = 2.5;
+        let totalDistance = 0;
+
+        // Drive mode speed limits
+        const speedLimits = {
+            eco: 30,
+            normal: 50,
+            sport: 100
+        };
 
         // Voice recognition setup
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -334,6 +406,55 @@
             window.speechSynthesis.speak(utterance);
         }
 
+        function setDriveMode(mode) {
+            playButtonSound();
+            currentDriveMode = mode;
+            document.querySelectorAll('.drive-mode-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[onclick="setDriveMode('${mode}')"]`).classList.add('active');
+            
+            // Update UI
+            document.getElementById('driveMode').textContent = 
+                mode === 'eco' ? 'Eko' : 
+                mode === 'sport' ? 'Spor' : 'Normal';
+
+            // Adjust speed if it exceeds the new mode's limit
+            const maxSpeed = speedLimits[mode];
+            if (speed > maxSpeed) {
+                speed = maxSpeed;
+                updateSpeed();
+            }
+
+            // Update energy consumption based on mode
+            updateEnergyConsumption();
+        }
+
+        function updateEnergyConsumption() {
+            const baseConsumption = 2.5;
+            energyConsumption = 
+                currentDriveMode === 'eco' ? baseConsumption * 0.8 :
+                currentDriveMode === 'sport' ? baseConsumption * 1.5 :
+                baseConsumption;
+            
+            document.getElementById('energyConsumption').textContent = 
+                `${energyConsumption.toFixed(1)} kWh/km`;
+        }
+
+        function updateTemperatures() {
+            // Simulate temperature changes based on speed and drive mode
+            const speedFactor = speed / 50;
+            const modeFactor = 
+                currentDriveMode === 'eco' ? 0.8 :
+                currentDriveMode === 'sport' ? 1.3 : 1;
+
+            motorTemp = Math.min(90, 50 + (speedFactor * 20 * modeFactor));
+            electronicsTemp = Math.min(70, 35 + (speedFactor * 15 * modeFactor));
+
+            document.getElementById('motorTemp').textContent = `${Math.round(motorTemp)}°C`;
+            document.getElementById('electronicsTemp').textContent = `${Math.round(electronicsTemp)}°C`;
+        }
+
         function openModal(type) {
             playButtonSound();
             document.querySelectorAll('.modal').forEach(modal => modal.classList.remove('active'));
@@ -368,7 +489,7 @@
             
             switch (command) {
                 case 'ileri':
-                    speed = Math.min(speed + 5, 50);
+                    speed = Math.min(speed + 5, speedLimits[currentDriveMode]);
                     updateSpeed();
                     break;
                 case 'geri':
@@ -382,14 +503,25 @@
                     speed = 0;
                     updateSpeed();
                     break;
+                case 'spor mod':
+                    setDriveMode('sport');
+                    break;
+                case 'eko mod':
+                    setDriveMode('eco');
+                    break;
+                case 'normal mod':
+                    setDriveMode('normal');
+                    break;
             }
         }
 
         function remoteControl(direction) {
             playButtonSound();
+            const maxSpeed = speedLimits[currentDriveMode];
+            
             switch (direction) {
                 case 'up':
-                    speed = Math.min(speed + 5, 50);
+                    speed = Math.min(speed + 5, maxSpeed);
                     updateSpeed();
                     break;
                 case 'down':
@@ -405,7 +537,9 @@
         function updateSpeed() {
             document.getElementById('speedDisplay').textContent = `${speed} km/s`;
             document.getElementById('remoteSpeed').textContent = `${speed} km/s`;
-            document.documentElement.style.setProperty('--speed', `${(speed / 50) * 360}deg`);
+            document.documentElement.style.setProperty('--speed', `${(speed / speedLimits[currentDriveMode]) * 360}deg`);
+            updateTemperatures();
+            updateEnergyConsumption();
         }
 
         function checkForLine() {
@@ -468,8 +602,11 @@
             document.getElementById('batteryStatus').textContent = `${batteryLevel}%`;
         }, 5000);
 
-        // Initialize speed display
+        // Initialize
         updateSpeed();
+        updateTemperatures();
+        updateEnergyConsumption();
+        setDriveMode('normal');
     </script>
 </body>
 </html>
